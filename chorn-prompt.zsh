@@ -212,7 +212,6 @@ _chorn_left_prompt() {
   _prompt[user]="$(_prompt_user)"
   _prompt[host]="$(_prompt_host)"
   _prompt[path]="$(_prompt_path)"
-  _prompt[path]="$(_prompt_path)"
 
   for _language in ${_preferred_languages[@]} ; do
     [[ -n "${_prompt_languages[$_language]}" ]] && _line1+=("${_prompt_languages[$_language]}")
