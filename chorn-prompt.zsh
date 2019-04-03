@@ -9,7 +9,7 @@ _prompt_reset() {
 _prompt_update_git() {
   local _git_command="${1:=git}"
 
-  typeset -A g=(staged 0 conflicts 0 changed 0 untracked 0 ignored 0 no_repository 0 clean 0)
+  typeset -A g=(staged 0 conflicts 0 changed 0 untracked 0 ignored 0 no_repository 0 clean 0 deleted 0)
 
   while read -rA _status ; do
     case "${_status[1]}" in
@@ -44,6 +44,9 @@ _prompt_update_git() {
           .M)
             (( g[changed]++ ))
             ;;
+          .D)
+            (( g[deleted]++ ))
+            ;;
           A.|M.)
             (( g[staged]++ ))
             ;;
@@ -59,7 +62,7 @@ _prompt_update_git() {
     esac
   done < <($_git_command status --porcelain=2 --branch 2>&1)
 
-  if (( g[changed] == 0 && g[conflicts] == 0 && g[staged] == 0 && g[untracked] == 0 )) ; then
+  if (( g[changed] == 0 && g[conflicts] == 0 && g[staged] == 0 && g[untracked] == 0 && g[deleted] == 0)) ; then
     g[clean]='yes_but_no_value_to_show'
   fi
 
@@ -90,7 +93,7 @@ _prompt_git() {
 
   (( g[no_repository] == 1 )) && return
 
-  for element in prefix branch behind ahead separator oid separator staged conflicts changed untracked clean suffix ; do
+  for element in prefix branch behind ahead separator oid separator staged conflicts changed untracked deleted clean suffix ; do
     _prompt_print_git_fragment "$element"
   done
 }
@@ -167,7 +170,7 @@ _prompt_gitconfigs() {
 
   if typeset -f prvgit >&/dev/null ; then
     print -n ' '
-    print -n '%F{8}PUB:%f'
+    print -n '%F{8}PRV:%f'
     _prompt_git prvgit
   fi
 }
@@ -264,6 +267,7 @@ prompt_chorn_setup() {
       ahead '%{↑%G%}'
       behind '%{↓%G%}'
       untracked '%{…%G%}'
+      deleted '%{$fg[red]%}%{ᛞ⃠%G%}'
       show_changed_count 1
       show_staged_count 1
       show_conflict_count 1
