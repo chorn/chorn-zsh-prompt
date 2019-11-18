@@ -195,7 +195,7 @@ _async_prompt_gitconfigs() {
 }
 #-----------------------------------------------------------------------------
 _async_prompt_callback() {
-  [[ -n "$3" ]] && eval "$3" && zle && zle reset-prompt >&/dev/null
+  [[ -n "$3" ]] && eval "$3" && zle && zle -R >&/dev/null
 }
 #-----------------------------------------------------------------------------
 _chorn_prompt_precmd() {
