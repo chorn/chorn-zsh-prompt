@@ -123,6 +123,9 @@ _language_version() {
     rust)
       rustc --version |& awk '{print $2}'
       ;;
+    go|golang)
+      go version |& sed -e 's/^go version go//' -e 's/ .*$//'
+      ;;
     *)
       ;;
   esac
@@ -195,7 +198,12 @@ _async_prompt_gitconfigs() {
 }
 #-----------------------------------------------------------------------------
 _async_prompt_callback() {
-  [[ -n "$3" ]] && eval "$3" && zle && zle -R >&/dev/null
+  [[ -n "$3" ]] \
+    && eval "$3" \
+    && zle \
+    && zle -R  \
+    && zle reset-prompt \
+    >&/dev/null
 }
 #-----------------------------------------------------------------------------
 _chorn_prompt_precmd() {
