@@ -126,6 +126,9 @@ _language_version() {
     go|golang)
       go version |& sed -e 's/^go version go//' -e 's/ .*$//'
       ;;
+    clojure)
+      clojure -M -e "(clojure-version)" | tr -d '"'
+      ;;
     *)
       ;;
   esac
