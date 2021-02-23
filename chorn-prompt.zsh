@@ -194,10 +194,6 @@ _async_prompt_gitconfigs() {
   echo "_prompt[gitconfigs]=\"$(_prompt_gitconfigs)\""
 }
 #-----------------------------------------------------------------------------
-_async_prompt_callback() {
-  [[ -n "$3" ]] && eval "$3" && zle && zle -R >&/dev/null
-}
-#-----------------------------------------------------------------------------
 _chorn_prompt_precmd() {
   async_job 'prompt_worker' _async_prompt_git "$PWD"
   async_job 'prompt_worker' _async_prompt_gitconfigs "$PWD"
@@ -241,7 +237,47 @@ _chorn_left_prompt() {
   print -n ' '
 }
 #-----------------------------------------------------------------------------
+#The callback_function is called with the following parameters:
+# $1 job name, e.g. the function passed to async_job
+# $2 return code
+#    Returns -1 if return code is missing, this should never happen, if it
+#    does, you have likely run into a bug. Please open a new issue with a
+#    detailed description of what you were doing.
+# $3 resulting (stdout) output from job execution
+# $4 execution time, floating point e.g. 0.0076138973 seconds
+# $5 resulting (stderr) error output from job execution
+# $6 has next result in buffer (0 = buffer empty, 1 = yes)
+#    This means another async job has completed and is pending in the buffer,
+#    it's very likely that your callback function will be called a second time
+#    (or more) in this execution. It's generally a good idea to e.g. delay
+#    prompt updates (zle reset-prompt) until the buffer is empty to prevent
+#    strange states in ZLE.
+#
+_async_prompt_callback() {
+  local _job="$1"
+  local _return_code="$2"
+  local _stdout="$3"
+  local _next="$6"
+
+  (( _return_code == 0 )) || _async_init
+
+  if [[ -n "$_stdout" ]] ; then
+    eval "$_stdout"
+    [[ -z "$_next" ]] && zle && zle -R >&/dev/null
+  fi
+}
+#-----------------------------------------------------------------------------
+_async_init() {
+  async
+  async_stop_worker 'prompt_worker' || true
+  async_start_worker 'prompt_worker'
+  async_register_callback 'prompt_worker' _async_prompt_callback
+  add-zsh-hook precmd _chorn_prompt_precmd
+}
+#-----------------------------------------------------------------------------
 prompt_chorn_setup() {
+  autoload -Uz colors && colors
+  autoload -Uz add-zsh-hook
   autoload -Uz async
 
   if ! typeset -f async >&/dev/null ; then
@@ -277,13 +313,7 @@ prompt_chorn_setup() {
     )
   fi
 
-  autoload -Uz colors && colors
-  autoload -Uz add-zsh-hook
-
-  async
-  async_start_worker 'prompt_worker' -n
-  async_register_callback 'prompt_worker' _async_prompt_callback
-  add-zsh-hook precmd _chorn_prompt_precmd
+  _async_init
 
   prompt_opts=(cr percent sp subst)
 
