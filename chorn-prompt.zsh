@@ -102,8 +102,14 @@ _language_version() {
   local language="$1"
 
   case "$language" in
-    ruby)
-      ruby --version | awk '{print $2}'
+    clojure)
+      clojure -M -e "(clojure-version)" | tr -d '"'
+      ;;
+    go|golang)
+      go version |& sed -e 's/^go version go//' -e 's/ .*$//'
+      ;;
+    elixir)
+      elixir --version |& grep '^Elixir' | awk '{print $2}'
       ;;
     node)
       node --version | sed -e 's/^v//'
@@ -117,12 +123,13 @@ _language_version() {
     python3)
       python3 --version |& awk '{print $2}'
       ;;
-    elixir)
-      elixir --version |& grep '^Elixir' | awk '{print $2}'
+    ruby)
+      ruby --version | awk '{print $2}'
       ;;
     rust)
       rustc --version |& awk '{print $2}'
       ;;
+
     *)
       ;;
   esac
