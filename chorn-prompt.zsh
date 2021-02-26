@@ -285,7 +285,7 @@ _async_prompt_callback() {
 
   if [[ -n "$_stdout" ]] ; then
     eval "$_stdout"
-    [[ -z "$_next" ]] && zle && zle -R >&/dev/null
+    (( _next == 0 )) && zle && zle -R >&/dev/null
   fi
 }
 #-----------------------------------------------------------------------------
