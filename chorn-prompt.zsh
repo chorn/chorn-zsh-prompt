@@ -2,6 +2,58 @@
 typeset -g -A _prompt
 typeset -g -A _prompt_languages
 #-----------------------------------------------------------------------------
+_language_version() {
+  local language="$1"
+
+  case "$language" in
+    clojure)
+      clojure -M -e "(clojure-version)" | tr -d '"'
+      ;;
+    crystal)
+      crystal --version | grep '^Crystal' | awk '{ print $2 }'
+      ;;
+    go|golang)
+      go version |& sed -e 's/^go version go//' -e 's/ .*$//'
+      ;;
+    elixir)
+      elixir --version |& grep '^Elixir' | awk '{print $2}'
+      ;;
+    elm)
+      elm --version
+      ;;
+    java)
+      java -version |& grep 'openjdk version' | sed -e 's/^.* "//' -e 's/" .*//'
+      ;;
+    node)
+      node --version | sed -e 's/^v//'
+      ;;
+    protoc)
+      protoc --version | awk '{ print $2 }'
+      ;;
+    python)
+      python --version |& awk '{print $2}'
+      ;;
+    python2)
+      python2 --version |& awk '{print $2}'
+      ;;
+    python3)
+      python3 --version |& awk '{print $2}'
+      ;;
+    ruby)
+      ruby --version | awk '{print $2}'
+      ;;
+    rust)
+      rustc --version |& awk '{print $2}'
+      ;;
+    swift)
+      swift --version | grep '^Apple' | awk '{ print $4 }'
+      ;;
+
+    *)
+      ;;
+  esac
+}
+#-----------------------------------------------------------------------------
 _prompt_reset() {
   print -n "%f%b%k%u%s"
 }
@@ -96,43 +148,6 @@ _prompt_git() {
   for element in prefix branch behind ahead separator oid separator staged conflicts changed untracked deleted clean suffix ; do
     _prompt_print_git_fragment "$element"
   done
-}
-#-----------------------------------------------------------------------------
-_language_version() {
-  local language="$1"
-
-  case "$language" in
-    clojure)
-      clojure -M -e "(clojure-version)" | tr -d '"'
-      ;;
-    go|golang)
-      go version |& sed -e 's/^go version go//' -e 's/ .*$//'
-      ;;
-    elixir)
-      elixir --version |& grep '^Elixir' | awk '{print $2}'
-      ;;
-    node)
-      node --version | sed -e 's/^v//'
-      ;;
-    python)
-      python --version |& awk '{print $2}'
-      ;;
-    python2)
-      python2 --version |& awk '{print $2}'
-      ;;
-    python3)
-      python3 --version |& awk '{print $2}'
-      ;;
-    ruby)
-      ruby --version | awk '{print $2}'
-      ;;
-    rust)
-      rustc --version |& awk '{print $2}'
-      ;;
-
-    *)
-      ;;
-  esac
 }
 #-----------------------------------------------------------------------------
 _prompt_time() {
