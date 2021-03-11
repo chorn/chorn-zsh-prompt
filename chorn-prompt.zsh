@@ -279,14 +279,30 @@ _async_prompt_callback() {
   local _job="$1"
   local _return_code="$2"
   local _stdout="$3"
+  local _time="$4"
+  local _stderr="$5"
   local _next="$6"
 
-  (( _return_code == 0 )) || _async_init
+  if [[ -n "$DEBUG_CHORN_PROMPT" ]] ; then
+    {
+      echo
+      echo "PWD           $PWD"
+      echo "_job          $1"
+      echo "_return_code  $2"
+      echo "_stdout       $3"
+      echo "_time         $4"
+      echo "_stderr       $5"
+      echo "_next         $6"
+      echo
+    } >> "$HOME/debug_chorn_prompt.log"
+  fi
 
   if [[ -n "$_stdout" ]] ; then
     eval "$_stdout"
-    (( _next == 0 )) && zle && zle -R >&/dev/null
+    (( _next == 0 )) && zle && zle reset-prompt >&/dev/null
   fi
+
+  (( _return_code == 0 )) || _async_init
 }
 #-----------------------------------------------------------------------------
 _async_init() {
@@ -294,7 +310,6 @@ _async_init() {
   async_stop_worker 'prompt_worker' || true
   async_start_worker 'prompt_worker'
   async_register_callback 'prompt_worker' _async_prompt_callback
-  add-zsh-hook precmd _chorn_prompt_precmd
 }
 #-----------------------------------------------------------------------------
 prompt_chorn_setup() {
@@ -336,6 +351,7 @@ prompt_chorn_setup() {
   fi
 
   _async_init
+  add-zsh-hook precmd _chorn_prompt_precmd
 
   prompt_opts=(cr percent sp subst)
 
