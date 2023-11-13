@@ -5,6 +5,9 @@ typeset -g -A _prompt_languages
 _language_version() {
   local language="$1"
 
+  (( $+commands[rtx] )) && eval "$(rtx hook-env -s zsh)"
+  (( $+commands[direnv] )) && eval "$(direnv export zsh)"
+
   case "$language" in
     clojure)
       clojure -M -e "(clojure-version)" | tr -d '"'
@@ -228,9 +231,6 @@ _chorn_prompt_precmd() {
 _chorn_left_prompt() {
   local -a _line1=()
   local -a _line2=()
-
-  (( $+commands[rtx] )) && eval "$(rtx hook-env -s zsh)"
-  (( $+commands[direnv] )) && eval "$(direnv export zsh)"
 
   _prompt[time]="$(_prompt_time)"
   _prompt[user]="$(_prompt_user)"
