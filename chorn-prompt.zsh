@@ -8,6 +8,12 @@ _language_version() {
   (( $+commands[mise] )) && eval "$(mise hook-env --quiet --shell zsh)"
   (( $+commands[direnv] )) && eval "$(direnv export zsh)"
 
+  [[ "$language" == "rust" ]] && language=rustc
+  if (( ! $+commands[$language] )); then
+    echo 'n/i'
+    return 0
+  fi
+
   case "$language" in
     clojure)
       clojure -M -e "(clojure-version)" | tr -d '"'
@@ -45,7 +51,7 @@ _language_version() {
     ruby)
       ruby --version | awk '{print $2}'
       ;;
-    rust)
+    rustc)
       rustc --version |& awk '{print $2}'
       ;;
     swift)
