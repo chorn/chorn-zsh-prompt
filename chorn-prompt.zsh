@@ -212,17 +212,17 @@ _async_prompt_language() {
 
   [[ -n "$_language" ]] || return
 
-  echo "_prompt_languages[${_language}]=\"%F{6}${_language}-$(_language_version "$_language")\""
+  echo "_prompt_languages[${_language}]=\"%F{6}${_language}-$(_language_version "$_language" 2>/dev/null)\""
 }
 #-----------------------------------------------------------------------------
 _async_prompt_git() {
   cd -q "$1"
-  echo "_prompt[git]=\"$(_prompt_git)\""
+  echo "_prompt[git]=\"$(_prompt_git 2>/dev/null)\""
 }
 #-----------------------------------------------------------------------------
 _async_prompt_gitconfigs() {
   cd -q "$1"
-  echo "_prompt[gitconfigs]=\"$(_prompt_gitconfigs)\""
+  echo "_prompt[gitconfigs]=\"$(_prompt_gitconfigs 2>/dev/null)\""
 }
 #-----------------------------------------------------------------------------
 _chorn_prompt_precmd() {
@@ -302,26 +302,33 @@ _async_prompt_callback() {
       echo "_time         $4"
       echo "_stderr       $5"
       echo "_next         $6"
+      echo "ZLE_STATE     $ZLE_STATE"
       echo
     } >> "$HOME/debug_chorn_prompt.log"
   fi
 
   if [[ -n "$_stdout" ]] ; then
     eval "$_stdout"
-    (( _next == 0 )) && zle && zle reset-prompt >&/dev/null
+    zle && zle -R
+    (( _next == 0 )) && { zle reset-prompt }
   fi
 
   (( _return_code == 0 )) || _async_init
 }
 #-----------------------------------------------------------------------------
 _async_init() {
+  ((${prompt_chorn_setup_done})) && return
+
   async
   async_stop_worker 'prompt_worker' || true
-  async_start_worker 'prompt_worker'
+  async_start_worker 'prompt_worker' -n
   async_register_callback 'prompt_worker' _async_prompt_callback
+  prompt_chorn_setup_done=1
 }
 #-----------------------------------------------------------------------------
 prompt_chorn_setup() {
+  typeset -g prompt_chorn_setup_done=0
+
   autoload -Uz colors && colors
   autoload -Uz add-zsh-hook
   autoload -Uz async
