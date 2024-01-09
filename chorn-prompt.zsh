@@ -5,7 +5,7 @@ typeset -g -A _prompt_languages
 _language_version() {
   local language="$1"
 
-  (( $+commands[rtx] )) && eval "$(rtx hook-env -s zsh)"
+  (( $+commands[mise] )) && eval "$(mise hook-env --quiet --shell zsh)"
   (( $+commands[direnv] )) && eval "$(direnv export zsh)"
 
   case "$language" in
