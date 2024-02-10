@@ -5,9 +5,6 @@ typeset -g -A _prompt_languages
 _language_version() {
   local language="$1"
 
-  (( $+commands[mise] )) && eval "$(mise hook-env --quiet --shell zsh)"
-  (( $+commands[direnv] )) && eval "$(direnv export zsh)"
-
   [[ "$language" == "rust" ]] && language=rustc
   if (( ! $+commands[$language] )); then
     echo 'n/i'
@@ -238,6 +235,9 @@ _chorn_left_prompt() {
   local -a _line1=()
   local -a _line2=()
 
+  (( $+commands[mise] )) && eval "$(mise hook-env --quiet --shell zsh)"
+  (( $+commands[direnv] )) && eval "$(direnv export zsh)"
+
   _prompt[time]="$(_prompt_time)"
   _prompt[user]="$(_prompt_user)"
   _prompt[host]="$(_prompt_host)"
@@ -307,13 +307,9 @@ _async_prompt_callback() {
     } >> "$HOME/debug_chorn_prompt.log"
   fi
 
-  if [[ -n "$_stdout" ]] ; then
-    eval "$_stdout"
-    zle && zle -R
-    (( _next == 0 )) && { zle reset-prompt }
-  fi
+  [[ -n "$_stdout" ]] && eval "$_stdout"
 
-  (( _return_code == 0 )) || _async_init
+  (( _next == 0 )) && zle && zle .reset-prompt && zle -R
 }
 #-----------------------------------------------------------------------------
 _async_init() {
