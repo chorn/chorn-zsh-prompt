@@ -5,6 +5,9 @@ typeset -g -A _prompt_languages
 _language_version() {
   local language="$1"
 
+  (( $+commands[mise] )) && eval "$(mise hook-env --quiet --shell zsh)"
+  (( $+commands[direnv] )) && eval "$(direnv export zsh)"
+
   [[ "$language" == "rust" ]] && language=rustc
   if (( ! $+commands[$language] )); then
     echo 'n/i'
@@ -234,9 +237,6 @@ _chorn_prompt_precmd() {
 _chorn_left_prompt() {
   local -a _line1=()
   local -a _line2=()
-
-  (( $+commands[mise] )) && eval "$(mise hook-env --quiet --shell zsh)"
-  (( $+commands[direnv] )) && eval "$(direnv export zsh)"
 
   _prompt[time]="$(_prompt_time)"
   _prompt[user]="$(_prompt_user)"
