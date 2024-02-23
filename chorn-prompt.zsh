@@ -204,7 +204,7 @@ _prompt_gitconfigs() {
 }
 #-----------------------------------------------------------------------------
 _async_prompt_language() {
-  cd -q "$1"
+  builtin cd -q "$1"
   local _language="$2"
 
   [[ -n "$_language" ]] || return
@@ -213,12 +213,12 @@ _async_prompt_language() {
 }
 #-----------------------------------------------------------------------------
 _async_prompt_git() {
-  cd -q "$1"
+  builtin cd -q "$1"
   echo "_prompt[git]=\"$(_prompt_git 2>/dev/null)\""
 }
 #-----------------------------------------------------------------------------
 _async_prompt_gitconfigs() {
-  cd -q "$1"
+  builtin cd -q "$1"
   echo "_prompt[gitconfigs]=\"$(_prompt_gitconfigs 2>/dev/null)\""
 }
 #-----------------------------------------------------------------------------
