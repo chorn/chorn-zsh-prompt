@@ -226,6 +226,8 @@ _async_prompt_gitconfigs() {
 }
 #-----------------------------------------------------------------------------
 _chorn_prompt_precmd() {
+  _async_init
+
   async_job 'prompt_worker' _async_prompt_git "$PWD"
   async_job 'prompt_worker' _async_prompt_gitconfigs "$PWD"
 
@@ -313,6 +315,7 @@ _async_prompt_callback() {
 }
 #-----------------------------------------------------------------------------
 _async_init() {
+  [[ -n "${ASYNC_CALLBACKS[prompt_worker]}" ]] || prompt_chorn_setup_done=0
   ((${prompt_chorn_setup_done})) && return
 
   async
@@ -362,7 +365,6 @@ prompt_chorn_setup() {
     )
   fi
 
-  _async_init
   add-zsh-hook precmd _chorn_prompt_precmd
 
   prompt_opts=(cr percent sp subst)
