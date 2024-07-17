@@ -167,18 +167,41 @@ _prompt_time() {
   print -n "%F{8}%D{%H:%M:%S}"
 }
 #-----------------------------------------------------------------------------
-__prompt_user() {
-  print -n '%F{9}_%n_'
+ps_owners() {
+  local _pid=${1:-$$}
+
+  [[ "$_pid" -eq 0 ]] && return
+  (( $+commands[ps] )) || return
+
+  read -r _uid _user _ppid _command < <(ps -o uid=,user=,ppid=,command= -p "$_pid")
+
+  echo "$_pid $_user $_uid $_ppid \"$_command\""
+
+  ps_owners "$_ppid"
+}
+
+am_i_someone_else() {
+  (( $+commands[pgrep] )) || return 0
+  pgrep -u 0 >&/dev/null || return 1
+  [[ "$EUID" -eq 0 ]] && return 1
+
+  local -a _owners
+  local -A _counts
+
+  while read -r _pid _user _uid _ppid _command; do
+    if [[ -z "${_counts[$_user]}" ]]; then
+      _owners+=("$_user")
+      _counts[$_user]=1
+    else
+      ((_counts[$_user]++))
+    fi
+  done < <(ps_owners)
+
+  [[ "${#_owners[@]}" -le 2 && "${_owners[-1]}" == "root" ]] && return 1
 }
 
 _prompt_user() {
-  if typeset -f am_i_someone_else >&/dev/null ; then
-    if am_i_someone_else ; then
-      __prompt_user
-    fi
-  else
-    __prompt_user
-  fi
+  am_i_someone_else && print -n '%F{9}_%n_'
 }
 #-----------------------------------------------------------------------------
 _prompt_host() {
