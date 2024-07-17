@@ -1,9 +1,9 @@
-#-----------------------------------------------------------------------------
-typeset -g -A _prompt
-typeset -g -A _prompt_languages
+#----------------------------------------------------------------------------
+typeset -gA _prompt
+typeset -gA _prompt_lang_cache
 #-----------------------------------------------------------------------------
 _language_version() {
-  local language="$1"
+  local language=$1
 
   (( $+commands[mise] )) && eval "$(mise hook-env --quiet --shell zsh)"
   (( $+commands[direnv] )) && eval "$(direnv export zsh)"
@@ -68,7 +68,8 @@ _prompt_reset() {
 }
 #-----------------------------------------------------------------------------
 _prompt_update_git() {
-  local _git_command="${1:=git}"
+  local _git_dir=${1:=.git}
+  local _work_tree=${2:=.}
 
   typeset -A g=(staged 0 conflicts 0 changed 0 untracked 0 ignored 0 no_repository 0 clean 0 deleted 0)
 
@@ -121,7 +122,7 @@ _prompt_update_git() {
         esac
         ;;
     esac
-  done < <($_git_command status --porcelain=2 --branch 2>&1)
+  done < <(git --git-dir="${_git_dir}" --work-tree="${_work_tree}" status --porcelain=2 --branch 2>&1)
 
   if (( g[changed] == 0 && g[conflicts] == 0 && g[staged] == 0 && g[untracked] == 0 && g[deleted] == 0)) ; then
     g[clean]='yes_but_no_value_to_show'
@@ -131,11 +132,11 @@ _prompt_update_git() {
 }
 #-----------------------------------------------------------------------------
 function _prompt_print_git_fragment() {
-  local theme="${_prompt_git_theme[$1]}"
-  local show="${_prompt_git_theme[show_${1}_count]}"
-  local value="${g[$1]}"
+  local theme=${_prompt_git_theme[$1]}
+  local show=${_prompt_git_theme[show_${1}_count]}
+  local value=${g[$1]}
 
-  [[ -z "$theme" ]] && return
+  [[ -n "$theme" ]] || return
   [[ "${show:=1}" == "1" ]] || return
   [[ "$value" == "0" ]] && return
 
@@ -148,9 +149,12 @@ function _prompt_print_git_fragment() {
 #-----------------------------------------------------------------------------
 _prompt_git() {
   (( $+commands[git] )) || return
-  local _git_command="${1:=git}"
+  local _git_dir=${1:=.git}
+  local _work_tree=${2:=.}
 
-  eval "$(_prompt_update_git "$_git_command")"
+   [[ -d "$_git_dir" && -d "$_work_tree" ]] || return
+
+  eval "$(_prompt_update_git "$_git_dir" "$_work_tree")"
 
   (( g[no_repository] == 1 )) && return
 
@@ -192,27 +196,27 @@ _prompt_lastexit() {
 }
 #-----------------------------------------------------------------------------
 _prompt_gitconfigs() {
-  [[ "$PWD" == "$HOME" ]] || return
+  [[ -n "${(k)_prompt_extra_git[@]}" ]] || return
 
-  if typeset -f pubgit >&/dev/null ; then
-    print -n '%F{8}PUB:%f'
-    _prompt_git pubgit
-  fi
+  for _extra in "${(k)_prompt_extra_git[@]}"; do
+    local _gd=${_prompt_extra_git[${_extra}]}
+    local _wt=$(dirname "$_gd")
 
-  if typeset -f prvgit >&/dev/null ; then
-    print -n ' '
-    print -n '%F{8}PRV:%f'
-    _prompt_git prvgit
-  fi
+    [[ "$_wt" == "$PWD" ]] || continue
+    [[ -d "$_gd" && -d "$_wt" ]] || continue
+
+    print -n " %F{8}${_extra}:%f"
+    _prompt_git "$_gd" "$_wt"
+  done
 }
 #-----------------------------------------------------------------------------
 _async_prompt_language() {
   builtin cd -q "$1"
-  local _language="$2"
+  local _language=$2
 
   [[ -n "$_language" ]] || return
 
-  echo "_prompt_languages[${_language}]=\"%F{6}${_language}-$(_language_version "$_language" 2>/dev/null)\""
+  echo "_prompt_lang_cache[${_language}]=\"%F{6}${_language}-$(_language_version "$_language" 2>/dev/null)\""
 }
 #-----------------------------------------------------------------------------
 _async_prompt_git() {
@@ -231,7 +235,9 @@ _chorn_prompt_precmd() {
   async_job 'prompt_worker' _async_prompt_git "$PWD"
   async_job 'prompt_worker' _async_prompt_gitconfigs "$PWD"
 
-  for _language in ${_preferred_languages[@]} ; do
+  [[ -n "${_prompt_languages[@]}" ]] || return
+
+  for _language in ${_prompt_languages[@]} ; do
     async_job 'prompt_worker' _async_prompt_language "$PWD" "$_language"
   done
 }
@@ -245,8 +251,8 @@ _chorn_left_prompt() {
   _prompt[host]="$(_prompt_host)"
   _prompt[path]="$(_prompt_path)"
 
-  for _language in ${_preferred_languages[@]} ; do
-    [[ -n "${_prompt_languages[$_language]}" ]] && _line1+=("${_prompt_languages[$_language]}")
+  for _language in ${_prompt_languages[@]} ; do
+    [[ -n "${_prompt_lang_cache[$_language]}" ]] && _line1+=("${_prompt_lang_cache[$_language]}")
   done
 
   for piece in git gitconfigs ; do
@@ -287,12 +293,12 @@ _chorn_left_prompt() {
 #    strange states in ZLE.
 #
 _async_prompt_callback() {
-  local _job="$1"
-  local _return_code="$2"
-  local _stdout="$3"
-  local _time="$4"
-  local _stderr="$5"
-  local _next="$6"
+  local _job=$1
+  local _return_code=$2
+  local _stdout=$3
+  local _time=$4
+  local _stderr=$5
+  local _next=$6
 
   if [[ -n "$DEBUG_CHORN_PROMPT" ]] ; then
     {
